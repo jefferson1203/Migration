@@ -123,6 +123,7 @@ type SimulationState struct {
 type SimulationConfig struct {
 	SimulationSpeed int `json:"simulationSpeed"`
 	WorldSize       int `json:"worldSize"`
+	InitialBirds    int `json:"initialBirds"`
 	ObstacleCount   int `json:"obstacleCount"`
 	ResourceCount   int `json:"resourceCount"`
 }
@@ -530,6 +531,7 @@ func startSimulationLoop() {
 			req.responseChan <- SimulationConfig{
 				SimulationSpeed: config.SimulationSpeed,
 				WorldSize:       config.WorldSize,
+				InitialBirds:    config.InitialBirds,
 				ObstacleCount:   config.ObstacleCount,
 				ResourceCount:   config.ResourceCount,
 			}
@@ -590,11 +592,13 @@ func setSimulationConfigHelper(newConfig SimulationConfig) {
 
 	config.SimulationSpeed = newConfig.SimulationSpeed
 	config.WorldSize = newConfig.WorldSize
+	config.InitialBirds = newConfig.InitialBirds
 	config.ObstacleCount = newConfig.ObstacleCount
 	config.ResourceCount = newConfig.ResourceCount
 
 	simulationState.WorldSize = config.WorldSize
-
+	simulationState.Birds = make([]Bird, config.InitialBirds)
+	initSimulation()
 }
 
 func SetTimeStep(newTimeStep int) {
@@ -626,6 +630,7 @@ func SaveSimulationState() error {
 	configJSON, err := json.Marshal(SimulationConfig{
 		SimulationSpeed: config.SimulationSpeed,
 		WorldSize:       config.WorldSize,
+		InitialBirds:    config.InitialBirds,
 		ObstacleCount:   config.ObstacleCount,
 		ResourceCount:   config.ResourceCount,
 	})
@@ -668,6 +673,7 @@ func LoadSimulationState() (*SaveState, error) {
 	simulationState = loadedState
 	config.SimulationSpeed = loadedConfig.SimulationSpeed
 	config.WorldSize = loadedConfig.WorldSize
+	config.InitialBirds = loadedConfig.InitialBirds
 	config.ObstacleCount = loadedConfig.ObstacleCount
 	config.ResourceCount = loadedConfig.ResourceCount
 	simulationState.IsRunning = false
