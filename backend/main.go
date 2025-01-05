@@ -399,12 +399,8 @@ func updateSimulation() {
 
 func updateMigratingBird(i int) {
 	bird := &simulationState.Birds[i]
-	//find next target
-	if distance(bird.Position, bird.Target) < 10 {
-		bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
-	}
 
-	//move to target
+	// Move to target
 	direction := [2]float64{bird.Target[0] - bird.Position[0], bird.Target[1] - bird.Position[1]}
 	normalizedDirection := normalize(direction)
 	bird.Velocity = [2]float64{normalizedDirection[0], normalizedDirection[1]}
@@ -415,13 +411,13 @@ func updateMigratingBird(i int) {
 	evadeObstacles(i)
 
 	// Simple rule: birds rest after migrating for a while, or when they are near a rest resource
-	if simulationState.Time%(1000) == 0 {
+	if simulationState.Time%1000 == 0 {
 		closestResource, _ := findClosestResource(bird.Position, "rest")
 		if closestResource != nil && distance(bird.Position, closestResource.Position) < 50 {
 			bird.State = "resting"
 			closestResource.Current++
 		}
-	} else if simulationState.Time%(700) == 0 {
+	} else if simulationState.Time%700 == 0 {
 		closestResource, _ := findClosestResource(bird.Position, "food")
 		if closestResource != nil && closestResource.Current < closestResource.Capacity && distance(bird.Position, closestResource.Position) < 50 {
 			bird.State = "searchingFood"
@@ -451,7 +447,7 @@ func updateSearchingFoodBird(i int) {
 		bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
 		return
 	}
-	//move to target
+	// Move to target
 	direction := [2]float64{closestResource.Position[0] - bird.Position[0], closestResource.Position[1] - bird.Position[1]}
 	normalizedDirection := normalize(direction)
 	bird.Velocity = [2]float64{normalizedDirection[0], normalizedDirection[1]}

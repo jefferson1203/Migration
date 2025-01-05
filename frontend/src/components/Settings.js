@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchSimulationConfig, updateSimulationConfig, setTimeStep, fetchTimeStep } from '../utils/api';
 
 const Settings = () => {
-  const [config, setConfig] = useState({ simulationSpeed: 100, worldSize: 1000 });
+  const [config, setConfig] = useState({ simulationSpeed: 100, worldSize: 1000, initialBirds: 50 });
   const [timeStep, setTimeStepState] = useState(1);
 
 
@@ -79,6 +79,15 @@ const Settings = () => {
           />
         </div>
          <div>
+          <label>Initial Birds: </label>
+          <input
+            type="number"
+            name="initialBirds"
+            value={config.initialBirds}
+            onChange={handleConfigChange}
+          />
+        </div>
+         <div>
           <label>Time Step: </label>
           <input
             type="number"
@@ -90,4 +99,4 @@ const Settings = () => {
   );
 };
 
-export default Settings; 
+export default Settings;

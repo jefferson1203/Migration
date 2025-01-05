@@ -86,6 +86,15 @@ function App() {
             <h3>Collisions:</h3>
             <p>{simulationState.collisionCount}</p>
           </div>
+          <div>
+            <h3>Legend:</h3>
+            <p><span style={{ color: 'green' }}>●</span> Migrating Bird</p>
+            <p><span style={{ color: 'blue' }}>●</span> Resting Bird</p>
+            <p><span style={{ color: 'purple' }}>●</span> Searching Food Bird</p>
+            <p><span style={{ color: 'orange' }}>●</span> Food Resource</p>
+            <p><span style={{ color: 'lightblue' }}>●</span> Rest Resource</p>
+            <p><span style={{ color: 'gray' }}>●</span> Obstacle</p>
+          </div>
         </div>
       </div>
     </div>
