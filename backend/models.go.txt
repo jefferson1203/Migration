@@ -1,0 +1,46 @@
+/*package main
+
+type Bird struct {
+	ID       int        `json:"id"`
+	Position [2]float64 `json:"position"`
+	Velocity [2]float64 `json:"velocity"`
+	State    string     `json:"state"`
+	Target   [2]float64 `json:"target"`
+}
+
+type Obstacle struct {
+	ID       int        `json:"id"`
+	Position [2]float64 `json:"position"`
+	Radius   float64    `json:"radius"`
+}
+
+type Resource struct {
+	ID       int        `json:"id"`
+	Position [2]float64 `json:"position"`
+	Type     string     `json:"type"`
+	Capacity int        `json:"capacity"`
+	Current  int        `json:"current"`
+}
+
+type SimulationState struct {
+	Birds     []Bird     `json:"birds"`
+	Time      int        `json:"time"`
+	IsRunning bool       `json:"isRunning"`
+	WorldSize int        `json:"worldSize"`
+	Obstacles []Obstacle `json:"obstacles"`
+	Resources []Resource `json:"resources"`
+}
+
+type SimulationConfig struct {
+	SimulationSpeed int `json:"simulationSpeed"`
+	WorldSize       int `json:"worldSize"`
+	ObstacleCount   int `json:"obstacleCount"`
+	ResourceCount   int `json:"resourceCount"`
+}
+
+type SaveState struct {
+	State    SimulationState  `json:"state"`
+	Config   SimulationConfig `json:"config"`
+	TimeStep int              `json:"timeStep"`
+}
+*/

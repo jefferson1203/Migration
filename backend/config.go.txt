@@ -1,0 +1,77 @@
+package main
+
+import (
+	"log"
+	"os"
+	"strconv"
+	"sync"
+
+	"github.com/joho/godotenv"
+)
+
+var config struct {
+	Port            int
+	SimulationSpeed int
+	WorldSize       int
+	InitialBirds    int
+	EnvironmentSize int
+	DBPath          string
+	ObstacleCount   int
+	ResourceCount   int
+}
+
+var once sync.Once
+
+func LoadConfig() {
+	once.Do(func() {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("Error loading .env file")
+		}
+		var envErr error
+		config.Port, envErr = strconv.Atoi(getEnv("PORT", "8080"))
+		if envErr != nil {
+			config.Port = 8080
+		}
+
+		config.SimulationSpeed, envErr = strconv.Atoi(getEnv("SIMULATION_SPEED", "100"))
+		if envErr != nil {
+			config.SimulationSpeed = 100
+		}
+
+		config.WorldSize, envErr = strconv.Atoi(getEnv("WORLD_SIZE", "1000"))
+		if envErr != nil {
+			config.WorldSize = 1000
+		}
+
+		config.InitialBirds, envErr = strconv.Atoi(getEnv("INITIAL_BIRDS", "50"))
+		if envErr != nil {
+			config.InitialBirds = 50
+		}
+
+		config.EnvironmentSize, envErr = strconv.Atoi(getEnv("ENVIRONMENT_SIZE", "100"))
+		if envErr != nil {
+			config.EnvironmentSize = 100
+		}
+
+		config.ObstacleCount, envErr = strconv.Atoi(getEnv("OBSTACLE_COUNT", "5"))
+		if envErr != nil {
+			config.ObstacleCount = 5
+		}
+
+		config.ResourceCount, envErr = strconv.Atoi(getEnv("RESOURCE_COUNT", "5"))
+		if envErr != nil {
+			config.ResourceCount = 5
+		}
+
+		config.DBPath = getEnv("DB_PATH", "simulation.db")
+
+	})
+}
+
+func getEnv(key string, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}

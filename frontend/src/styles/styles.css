@@ -1,0 +1,75 @@
+/* styles.css */
+
+.app-container {
+  font-family: 'Baloo 2', sans-serif;
+  text-align: center;
+  margin: 20px;
+  background: linear-gradient(to bottom, #ffe6f2, #f0f0f0);
+}
+
+.simulation-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 15px;
+  cursor: pointer;
+  border: none;
+  background-color: #ff69b4;
+  color: white;
+  border-radius: 20px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  transition: background-color 0.3s ease, transform 0.2s ease; /* transition pour la couleur et le scale */
+}
+
+ button:hover {
+      background-color: #ff99cc; /* Rose plus clair au survol*/
+  transform: scale(1.05);
+  }
+
+button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+  button:active{
+     background-color: #cc3984; /* rose plus foncé au clic */
+  transition: background-color 0.1s ease;
+}
+
+.controls-container h3{
+    color: #ff69b4;
+}
+
+ .controls-container div{
+  background-color: rgba(255,255,255, 0.7);
+  padding: 15px;
+border-radius: 10px;
+margin-bottom: 10px;
+ }
+
+  .controls-container input{
+     border-radius: 5px;
+     border: 1px solid #ff69b4;
+   padding: 5px;
+  }
+
+.controls-container div > p {
+  transition: color 0.2s ease, transform 0.1s ease; /* Transition de couleur et de scale */
+}
+
+.controls-container div > p.collision {
+  color: #ff0000; /* Rouge vif lors d'une collision */
+      transform: scale(1.1); /* léger agrandissement lors d'une collision */
+}
