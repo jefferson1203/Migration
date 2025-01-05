@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SimulationCanvas from './components/SimulationCanvas';
 import Controls from './components/Controls';
 import Settings from './components/Settings';
@@ -6,74 +6,86 @@ import { fetchSimulationState, startSimulation, stopSimulation } from './utils/a
 import './styles/styles.css';
 
 function App() {
-  const [simulationState, setSimulationState] = useState({ birds: [], time: 0, isRunning: false, worldSize: 1000, obstacles: [], resources: [], collisionCount: 0 });
-  const [isRunning, setIsRunning] = useState(false)
+  const [simulationState, setSimulationState] = useState({
+    birds: [],
+    time: 0,
+    isRunning: false,
+    worldSize: 1000,
+    obstacles: [],
+    resources: [],
+    collisionCount: 0,
+  });
 
-  
-    useEffect(() => {
-      const fetchState = async () => {
-        try {
-            const state = await fetchSimulationState();
-            setSimulationState(state);
-            setIsRunning(state.isRunning);
-          } catch (error) {
-            console.error("Failed to fetch simulation state:", error);
-          }
-      };
-      fetchState();
-  }, []);
-  
-    useEffect(() => {
-        let intervalId;
-        if (isRunning) {
-              intervalId = setInterval(async () => {
-                  try {
-                          const state = await fetchSimulationState();
-                          setSimulationState(state);
-                      } catch (error) {
-                        console.error("Failed to fetch simulation state:", error);
-                      }
-                }, 100) 
-          }
-        return () => clearInterval(intervalId)
-    }, [isRunning]);
-
-
-    const handleStart = async () => {
+  // Fetch the simulation state on component mount
+  useEffect(() => {
+    const fetchInitialState = async () => {
       try {
-        await startSimulation();
         const state = await fetchSimulationState();
-          setSimulationState(state);
-        setIsRunning(state.isRunning);
-        } catch (e) {
-            console.log(e)
-        }
-  };
+        setSimulationState((prevState) => ({ ...prevState, ...state }));
+      } catch (error) {
+        console.error('Failed to fetch initial simulation state:', error);
+      }
+    };
+    fetchInitialState();
+  }, []);
 
-  const handleStop = async () => {
+  // Periodically update simulation state when running
+  useEffect(() => {
+    if (simulationState.isRunning) {
+      const intervalId = setInterval(async () => {
         try {
-            await stopSimulation();
-            const state = await fetchSimulationState();
-             setSimulationState(state);
-           setIsRunning(state.isRunning);
-        } catch (e) {
-            console.log(e)
+          const state = await fetchSimulationState();
+          setSimulationState((prevState) => ({ ...prevState, ...state }));
+        } catch (error) {
+          console.error('Failed to fetch simulation state:', error);
         }
-  };
-    
+      }, 100);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [simulationState.isRunning]);
+
+  // Start simulation handler
+  const handleStart = useCallback(async () => {
+    try {
+      await startSimulation();
+      const state = await fetchSimulationState();
+      setSimulationState((prevState) => ({ ...prevState, ...state }));
+    } catch (error) {
+      console.error('Failed to start simulation:', error);
+    }
+  }, []);
+
+  // Stop simulation handler
+  const handleStop = useCallback(async () => {
+    try {
+      await stopSimulation();
+      const state = await fetchSimulationState();
+      setSimulationState((prevState) => ({ ...prevState, ...state }));
+    } catch (error) {
+      console.error('Failed to stop simulation:', error);
+    }
+  }, []);
 
   return (
     <div className="app-container">
       <h1>Bird Migration Simulation</h1>
       <div className="simulation-container">
+        {/* Simulation canvas */}
         <SimulationCanvas simulationState={simulationState} />
+
+        {/* Controls and other information */}
         <div className="controls-container">
-            <Controls isRunning={isRunning} onStart={handleStart} onStop={handleStop} />
-            <Settings />
-             <div>
-                <h3>Collisions :</h3>
-               <p>{simulationState.collisionCount}</p>
-            </div>
+          <Controls
+            isRunning={simulationState.isRunning}
+            onStart={handleStart}
+            onStop={handleStop}
+          />
+          <Settings />
+          <div>
+            <h3>Collisions:</h3>
+            <p>{simulationState.collisionCount}</p>
+          </div>
         </div>
       </div>
     </div>

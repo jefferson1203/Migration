@@ -76,7 +76,7 @@ func LoadConfig() {
 		}
 
 		config.DBPath = getEnv("DB_PATH", "simulation.db")
-
+		log.Println("config loaded", config)
 	})
 }
 
@@ -342,7 +342,7 @@ func initSimulation() {
 		simulationState.Birds[i] = Bird{
 			ID:       i,
 			Position: [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)},
-			Velocity: [2]float64{rand.Float64() - 0.5, rand.Float64() - 0.5},
+			Velocity: [2]float64{rand.Float64() - 0.5, rand.Float64()*2 - 1},
 			State:    "migrating",
 			Target:   [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)},
 		}
@@ -350,8 +350,9 @@ func initSimulation() {
 	simulationState.Time = 0
 	simulationState.IsRunning = isRunning
 	simulationState.WorldSize = config.WorldSize
-	isRunning = true // Set running to true
+	isRunning = true
 	simulationState.IsRunning = isRunning
+	log.Println("simulation state initialized ", simulationState)
 }
 
 func StartSimulation() {
@@ -381,19 +382,22 @@ func updateSimulation() {
 
 	for i := range simulationState.Birds {
 		bird := &simulationState.Birds[i]
+		log.Printf("bird %d, state: %s before update, position %f, %f", bird.ID, bird.State, bird.Position[0], bird.Position[1])
 		switch bird.State {
 		case "migrating":
-			updateMigratingBird(bird)
+			updateMigratingBird(i)
 		case "resting":
-			updateRestingBird(bird)
+			updateRestingBird(i)
 		case "searchingFood":
-			updateSearchingFoodBird(bird)
+			updateSearchingFoodBird(i)
 		}
+		log.Printf("bird %d, state: %s after update, position %f, %f", bird.ID, bird.State, bird.Position[0], bird.Position[1])
 	}
 	simulationState.Time++
 }
 
-func updateMigratingBird(bird *Bird) {
+func updateMigratingBird(i int) {
+	bird := &simulationState.Birds[i]
 	//find next target
 	if distance(bird.Position, bird.Target) < 10 {
 		bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
@@ -407,7 +411,7 @@ func updateMigratingBird(bird *Bird) {
 	bird.Position[1] += bird.Velocity[1] * float64(timeStep)
 
 	// Evade obstacles
-	evadeObstacles(bird)
+	evadeObstacles(i)
 
 	// Simple rule: birds rest after migrating for a while, or when they are near a rest resource
 	if simulationState.Time%(1000) == 0 {
@@ -425,7 +429,8 @@ func updateMigratingBird(bird *Bird) {
 	}
 }
 
-func updateRestingBird(bird *Bird) {
+func updateRestingBird(i int) {
+	bird := &simulationState.Birds[i]
 	// after resting, resume migration
 	if simulationState.Time%(1000) == 100 {
 		bird.State = "migrating"
@@ -437,7 +442,8 @@ func updateRestingBird(bird *Bird) {
 	}
 }
 
-func updateSearchingFoodBird(bird *Bird) {
+func updateSearchingFoodBird(i int) {
+	bird := &simulationState.Birds[i]
 	closestResource, index := findClosestResource(bird.Position, "food")
 	if closestResource == nil || closestResource.Current >= closestResource.Capacity {
 		bird.State = "migrating"
@@ -457,13 +463,15 @@ func updateSearchingFoodBird(bird *Bird) {
 	}
 }
 
-func evadeObstacles(bird *Bird) {
+func evadeObstacles(i int) {
+	bird := &simulationState.Birds[i]
 	for _, obstacle := range simulationState.Obstacles {
 		dist := distance(bird.Position, obstacle.Position)
 		if dist < obstacle.Radius+10 {
 			evadeDirection := [2]float64{bird.Position[0] - obstacle.Position[0], bird.Position[1] - obstacle.Position[1]}
 			normalizedEvade := normalize(evadeDirection)
-			bird.Velocity = [2]float64{bird.Velocity[0] + normalizedEvade[0]*0.5, bird.Velocity[1] + normalizedEvade[1]*0.5} // Change Velocity to avoid the obstacle
+			bird.Velocity = [2]float64{normalizedEvade[0] * 0.5, normalizedEvade[1] * 0.5}
+			return
 		}
 	}
 }
@@ -515,6 +523,19 @@ func startSimulationLoop() {
 		select {
 		case <-ticker.C:
 			updateSimulation()
+			detectCollisions()
+		case req := <-stateChan:
+			req.responseChan <- simulationState
+		case req := <-configChan:
+			req.responseChan <- SimulationConfig{
+				SimulationSpeed: config.SimulationSpeed,
+				WorldSize:       config.WorldSize,
+				ObstacleCount:   config.ObstacleCount,
+				ResourceCount:   config.ResourceCount,
+			}
+		case req := <-timeStepChan:
+			timeStep = req.newTimeStep
+			req.responseChan <- timeStep
 		case req := <-simulationControlChan:
 			switch req.action {
 			case "start":
@@ -528,20 +549,23 @@ func startSimulationLoop() {
 				simulationState.IsRunning = isRunning
 				log.Println("Simulation stop requested, current isRunning: ", isRunning)
 				req.responseChan <- true
+			case "restart":
+				initSimulation()
+				isRunning = true
+				simulationState.IsRunning = isRunning
+				log.Println("Simulation restart requested, current isRunning: ", isRunning)
+				req.responseChan <- true
 			}
 		}
-
 	}
 }
 
 func GetSimulationState() SimulationState {
-	log.Println("GetSimulationState before stateChan <- simulationRequest")
 	responseChan := make(chan SimulationState)
 	stateChan <- simulationRequest{
 		responseChan: responseChan,
 	}
 	state := <-responseChan
-	log.Println("GetSimulationState called, response:", state)
 	return state
 }
 
@@ -648,6 +672,7 @@ func LoadSimulationState() (*SaveState, error) {
 	config.ResourceCount = loadedConfig.ResourceCount
 	simulationState.IsRunning = false
 	isRunning = false
+	timeStep = timeStep
 
 	return &SaveState{
 		State:    loadedState,
