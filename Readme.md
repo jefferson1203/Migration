@@ -35,65 +35,55 @@ Ce projet est une simulation multi-agent de la migration d'oiseaux, développée
 *   Un éditeur de code (ex: VS Code, GoLand)
 *   Une installation de SQLite pour pouvoir utiliser la base de données en backend
 
-### Lancer l'application
+### Lancer le Backend
 
-Pour lancer l'application, suivez les étapes ci-dessous :
+1. **Clonez le dépôt** :
+   ```sh
+   git clone git@gitlab.utc.fr:cmbouopd/migration.git
+   cd migration/backend
+   ```
 
-1. **Clonez le repository :**
- ```bash
- git clone https://github.com/ton_utilisateur/bird-migration-simulation.git
- ```
-
-2. **Démarrez le Backend :**
-    * Naviguez vers le dossier `backend` :
-
-     ```bash
-     cd bird-migration-simulation/backend
-     ```
-    *  **Créez un fichier `.env` :**
-        *  Créez un fichier `.env` à la racine du dossier `backend`, et ajoutez les variables suivantes :
-
-         ```env
-         PORT=8080
-         SIMULATION_SPEED=100
-         WORLD_SIZE=1000
-         INITIAL_BIRDS=50
-         ENVIRONMENT_SIZE=100
-         DB_PATH=simulation.db
-         OBSTACLE_COUNT=5
-         RESOURCE_COUNT=5
-         ```
-
-    *  **Exécutez le serveur backend :**
-    ```bash
-    go run main.go
+2. **Créez un fichier `.env`** :
+   - Créez un fichier `.env` à la racine du répertoire `backend` et ajoutez les variables d'environnement nécessaires :
+     ```env
+     PORT=8080
+     SIMULATION_SPEED=100
+     WORLD_SIZE=1000
+     INITIAL_BIRDS=50
+     ENVIRONMENT_SIZE=100
+     OBSTACLE_COUNT=5
+     RESOURCE_COUNT=5
+     DB_PATH=simulation.db
      ```
 
-    Le backend devrait démarrer et être accessible sur `http://localhost:8080`.
+3. **Lancez l'exécutable** :
+   - Si vous avez déjà l'exécutable, lancez-le directement :
+     ```sh
+     ./bird-migration-simulation
+     ```
 
-3.  **Démarrez le Frontend :**
-    *   Naviguez vers le dossier `frontend` :
+4. **Accédez à l'API** :
+   - L'API sera accessible à l'adresse `http://localhost:8080`.
 
-         ```bash
-         cd bird-migration-simulation/frontend
-         ```
-    *   **Installez les dépendances :**
+### Lancer le Frontend
 
-         ```bash
-         npm install
-         ```
-    *   **Créez un fichier `.env` :**
-        *   Créez un fichier `.env` à la racine du dossier `frontend/src` et ajoutez la ligne suivante :
+1. **Naviguez vers le répertoire du frontend** :
+   ```sh
+   cd ../frontend
+   ```
 
-         ```env
-         REACT_APP_BACKEND_URL=http://localhost:8080
-         ```
-    * **Exécutez l'application React :**
-    ```bash
-    npm start
-    ```
+2. **Installez les dépendances** :
+   ```sh
+   npm install
+   ```
 
-Le frontend devrait démarrer et être accessible dans votre navigateur à l'adresse `http://localhost:3000`.
+3. **Lancez le frontend** :
+   ```sh
+   npm start
+   ```
+
+4. **Accédez à l'application** :
+   - L'application sera accessible à l'adresse `http://localhost:3000`.
 
 ### Utilisation
 

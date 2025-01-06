@@ -1,4 +1,4 @@
-module migration
+module gitlab.utc.fr/cmbouopd/migration.git
 
 go 1.23.4
 
