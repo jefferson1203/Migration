@@ -76,7 +76,6 @@ func LoadConfig() {
 		}
 
 		config.DBPath = getEnv("DB_PATH", "simulation.db")
-		log.Println("config loaded", config)
 	})
 }
 
@@ -89,11 +88,13 @@ func getEnv(key string, defaultValue string) string {
 
 // --- Models ---
 type Bird struct {
-	ID       int        `json:"id"`
-	Position [2]float64 `json:"position"`
-	Velocity [2]float64 `json:"velocity"`
-	State    string     `json:"state"`
-	Target   [2]float64 `json:"target"`
+	ID            int        `json:"id"`
+	Position      [2]float64 `json:"position"`
+	Velocity      [2]float64 `json:"velocity"`
+	State         string     `json:"state"`
+	Target        [2]float64 `json:"target"`
+	Group         int        `json:"group"`
+	CollisionTime int64      `json:"collisionTime"` // Time when the collision was first detected
 }
 
 type Obstacle struct {
@@ -166,18 +167,42 @@ type simulationControlRequest struct {
 	responseChan chan bool
 }
 
+// const minDistanceBetweenBirds = 100.0 // Increase minimum distance between birds when searching for food
+const collisionThreshold = 2.0 // Distance threshold for collision detection
+const separationDelay = 3000   // Delay in milliseconds before birds separate after finishing migration
+
+var currentFoodLocation [2]float64
+var foodRegion int
+
 func detectCollisions() {
 	for i := 0; i < len(simulationState.Birds); i++ {
 		for j := i + 1; j < len(simulationState.Birds); j++ {
 			bird1 := &simulationState.Birds[i]
 			bird2 := &simulationState.Birds[j]
 			dist := distance(bird1.Position, bird2.Position)
-			if dist < 2 {
-				simulationState.CollisionCount++
-				log.Printf("Collision detected between bird %d and bird %d, current count: %d \n", bird1.ID, bird2.ID, simulationState.CollisionCount)
+			if dist < collisionThreshold {
+				if bird1.CollisionTime == 0 && bird2.CollisionTime == 0 {
+					bird1.CollisionTime = int64(simulationState.Time)
+					bird2.CollisionTime = int64(simulationState.Time)
+					simulationState.CollisionCount++
+					// Move birds apart to reduce further collisions
+					moveBirdsApart(bird1, bird2)
+				}
+			} else {
+				bird1.CollisionTime = 0
+				bird2.CollisionTime = 0
 			}
 		}
 	}
+}
+
+func moveBirdsApart(bird1, bird2 *Bird) {
+	direction := [2]float64{bird1.Position[0] - bird2.Position[0], bird1.Position[1] - bird2.Position[1]}
+	normalizedDirection := normalize(direction)
+	bird1.Position[0] += normalizedDirection[0] * collisionThreshold
+	bird1.Position[1] += normalizedDirection[1] * collisionThreshold
+	bird2.Position[0] -= normalizedDirection[0] * collisionThreshold
+	bird2.Position[1] -= normalizedDirection[1] * collisionThreshold
 }
 
 func main() {
@@ -231,7 +256,6 @@ func main() {
 	})
 
 	router.GET("/simulation", func(c *gin.Context) {
-		log.Println(" GET /simulation called")
 		state := GetSimulationState()
 		c.JSON(http.StatusOK, state)
 	})
@@ -323,8 +347,14 @@ func initSimulation() {
 		}
 	}
 
+	// Ensure the number of resources is at least one-third of the number of birds
+	resourceCount := config.ResourceCount
+	if resourceCount < config.InitialBirds/3 {
+		resourceCount = config.InitialBirds / 3
+	}
+
 	// Generate resources
-	simulationState.Resources = make([]Resource, config.ResourceCount)
+	simulationState.Resources = make([]Resource, resourceCount) // Decrease the number of resources
 	for i := range simulationState.Resources {
 		resourceType := "food"
 		if i%2 == 0 {
@@ -334,37 +364,49 @@ func initSimulation() {
 			ID:       i,
 			Position: [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)},
 			Type:     resourceType,
-			Capacity: 10,
-			Current:  0,
+			Capacity: 5, // Decrease the capacity of resources
+			Current:  5,
 		}
 	}
 
+	numGroups := config.InitialBirds / 10
+	if numGroups < 1 {
+		numGroups = 1
+	}
+	groups := make([]int, config.InitialBirds)
 	for i := range simulationState.Birds {
+		groups[i] = rand.Intn(numGroups)
+	}
+
+	// Set one-third of the birds to "searchingFood" state and the rest to "migrating" state
+	for i := range simulationState.Birds {
+		state := "migrating"
+		if i < config.InitialBirds/3 {
+			state = "searchingFood"
+		}
 		simulationState.Birds[i] = Bird{
 			ID:       i,
 			Position: [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)},
 			Velocity: [2]float64{rand.Float64() - 0.5, rand.Float64()*2 - 1},
-			State:    "migrating",
+			State:    state,
 			Target:   [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)},
+			Group:    groups[i],
 		}
 	}
 	simulationState.Time = 0
 	simulationState.IsRunning = isRunning
 	simulationState.WorldSize = config.WorldSize
 	isRunning = true
-	simulationState.IsRunning = isRunning
-	log.Println("simulation state initialized ", simulationState)
 }
 
 func StartSimulation() {
-	log.Println("StartSimulation called")
 	responseChan := make(chan bool)
 	simulationControlChan <- simulationControlRequest{
 		action:       "start",
 		responseChan: responseChan,
 	}
 	result := <-responseChan
-	log.Println("responseChan return: ", result)
+	log.Println(result)
 }
 
 func StopSimulation() {
@@ -381,46 +423,134 @@ func updateSimulation() {
 		return
 	}
 
+	groups := make(map[int][]Bird)
+	for _, bird := range simulationState.Birds {
+		groups[bird.Group] = append(groups[bird.Group], bird)
+	}
+
+	for group, birds := range groups {
+		var totalX, totalY float64
+		var numBirds int
+		for _, bird := range birds {
+			if bird.State == "migrating" {
+				totalX += bird.Position[0]
+				totalY += bird.Position[1]
+				numBirds++
+			}
+		}
+		var groupTarget [2]float64
+		if numBirds > 0 {
+			groupTarget = [2]float64{totalX / float64(numBirds), totalY / float64(numBirds)}
+		} else {
+			groupTarget = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
+		}
+		for i := range simulationState.Birds {
+			bird := &simulationState.Birds[i]
+			if bird.State == "migrating" && bird.Group == group {
+				updateMigratingBird(i, groupTarget)
+			} else if bird.State == "resting" {
+				updateRestingBird(i)
+			} else if bird.State == "searchingFood" {
+				updateSearchingFoodBird(i)
+			}
+		}
+	}
+
+	// Check if the current food location is depleted
+	if len(simulationState.Resources) == 0 || simulationState.Resources[0].Current <= 0 {
+		// Generate new food location in a different region
+		foodRegion = (foodRegion + 1) % 4
+		var xOffset, yOffset float64
+		switch foodRegion {
+		case 0:
+			xOffset, yOffset = 0, 0
+		case 1:
+			xOffset, yOffset = float64(config.WorldSize)/2, 0
+		case 2:
+			xOffset, yOffset = 0, float64(config.WorldSize)/2
+		case 3:
+			xOffset, yOffset = float64(config.WorldSize)/2, float64(config.WorldSize)/2
+		}
+		currentFoodLocation = [2]float64{xOffset + rand.Float64()*float64(config.WorldSize)/2, yOffset + rand.Float64()*float64(config.WorldSize)/2}
+		simulationState.Resources = []Resource{
+			{
+				ID:       0,
+				Position: currentFoodLocation,
+				Type:     "food",
+				Capacity: 5,
+				Current:  5,
+			},
+		}
+
+		// Update all birds to move towards the new food location
+		for i := range simulationState.Birds {
+			bird := &simulationState.Birds[i]
+			bird.State = "migrating"
+			bird.Target = currentFoodLocation
+		}
+	}
+
+	// Limit the number of searching food birds
+	searchingFoodBirds := 0
+	for _, bird := range simulationState.Birds {
+		if bird.State == "searchingFood" {
+			searchingFoodBirds++
+		}
+	}
+
+	// Randomly change states of birds
 	for i := range simulationState.Birds {
 		bird := &simulationState.Birds[i]
-		log.Printf("bird %d, state: %s before update, position %f, %f", bird.ID, bird.State, bird.Position[0], bird.Position[1])
-		switch bird.State {
-		case "migrating":
-			updateMigratingBird(i)
-		case "resting":
-			updateRestingBird(i)
-		case "searchingFood":
-			updateSearchingFoodBird(i)
+		if bird.State == "migrating" && rand.Float64() < 0.05 && searchingFoodBirds < len(simulationState.Resources)/4 {
+			bird.State = "searchingFood"
+			bird.Target = currentFoodLocation
+			searchingFoodBirds++
+		} else if bird.State == "searchingFood" && distance(bird.Position, bird.Target) < 10 {
+			// After eating, change state to migrating or resting
+			if rand.Float64() < 0.5 {
+				bird.State = "migrating"
+				bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
+			} else {
+				bird.State = "resting"
+			}
+		} else if bird.State == "resting" && rand.Float64() < 0.1 {
+			bird.State = "migrating"
+			bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
 		}
-		log.Printf("bird %d, state: %s after update, position %f, %f", bird.ID, bird.State, bird.Position[0], bird.Position[1])
 	}
+
 	simulationState.Time++
 }
 
-func updateMigratingBird(i int) {
+func updateMigratingBird(i int, groupTarget [2]float64) {
 	bird := &simulationState.Birds[i]
 
 	// Move to target
-	direction := [2]float64{bird.Target[0] - bird.Position[0], bird.Target[1] - bird.Position[1]}
+	direction := [2]float64{groupTarget[0] - bird.Position[0], groupTarget[1] - bird.Position[1]}
 	normalizedDirection := normalize(direction)
 	bird.Velocity = [2]float64{normalizedDirection[0], normalizedDirection[1]}
 	bird.Position[0] += bird.Velocity[0] * float64(timeStep)
 	bird.Position[1] += bird.Velocity[1] * float64(timeStep)
 
+	// Ensure bird stays within world boundaries
+	bird.Position[0] = math.Max(0, math.Min(float64(config.WorldSize), bird.Position[0]))
+	bird.Position[1] = math.Max(0, math.Min(float64(config.WorldSize), bird.Position[1]))
+
 	// Evade obstacles
 	evadeObstacles(i)
 
-	// Simple rule: birds rest after migrating for a while, or when they are near a rest resource
-	if simulationState.Time%1000 == 0 {
+	// Change state based on time and proximity to resources
+	if simulationState.Time%500 == 0 { // Resting state change
 		closestResource, _ := findClosestResource(bird.Position, "rest")
 		if closestResource != nil && distance(bird.Position, closestResource.Position) < 50 {
 			bird.State = "resting"
 			closestResource.Current++
 		}
-	} else if simulationState.Time%700 == 0 {
+	} else if simulationState.Time%300 == 0 { // Searching food state change
 		closestResource, _ := findClosestResource(bird.Position, "food")
 		if closestResource != nil && closestResource.Current < closestResource.Capacity && distance(bird.Position, closestResource.Position) < 50 {
 			bird.State = "searchingFood"
+			bird.Target = closestResource.Position
 			closestResource.Current++
 		}
 	}
@@ -428,22 +558,28 @@ func updateMigratingBird(i int) {
 
 func updateRestingBird(i int) {
 	bird := &simulationState.Birds[i]
-	// after resting, resume migration
-	if simulationState.Time%(1000) == 100 {
+	// Change state after resting
+	if simulationState.Time%(separationDelay) == 0 {
 		bird.State = "migrating"
 		closestResource, index := findClosestResource(bird.Position, "rest")
 		if closestResource != nil {
 			simulationState.Resources[index].Current--
 		}
-		bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
+		// Set a new target within a small circle
+		angle := rand.Float64() * 2 * math.Pi
+		radius := rand.Float64() * 10
+		bird.Target = [2]float64{
+			bird.Position[0] + radius*math.Cos(angle),
+			bird.Position[1] + radius*math.Sin(angle),
+		}
 	}
 }
 
 func updateSearchingFoodBird(i int) {
 	bird := &simulationState.Birds[i]
 	closestResource, index := findClosestResource(bird.Position, "food")
-	if closestResource == nil || closestResource.Current >= closestResource.Capacity {
-		bird.State = "migrating"
+	if closestResource == nil || closestResource.Current <= 0 {
+		// If no food is available nearby, move to a random location to search for food
 		bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
 		return
 	}
@@ -453,9 +589,19 @@ func updateSearchingFoodBird(i int) {
 	bird.Velocity = [2]float64{normalizedDirection[0], normalizedDirection[1]}
 	bird.Position[0] += bird.Velocity[0] * float64(timeStep)
 	bird.Position[1] += bird.Velocity[1] * float64(timeStep)
+
+	// Ensure bird stays within world boundaries
+	bird.Position[0] = math.Max(0, math.Min(float64(config.WorldSize), bird.Position[0]))
+	bird.Position[1] = math.Max(0, math.Min(float64(config.WorldSize), bird.Position[1]))
+
 	if distance(bird.Position, closestResource.Position) < 10 {
 		bird.State = "migrating"
 		simulationState.Resources[index].Current--
+		if simulationState.Resources[index].Current <= 0 {
+			// Move the resource to a new location if it is depleted
+			simulationState.Resources[index].Position = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
+			simulationState.Resources[index].Current = simulationState.Resources[index].Capacity
+		}
 		bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
 	}
 }
@@ -475,7 +621,7 @@ func evadeObstacles(i int) {
 
 func distance(pos1 [2]float64, pos2 [2]float64) float64 {
 	dx := pos1[0] - pos2[0]
-	dy := pos1[1] - pos2[1]
+	dy := pos2[1] - pos2[1]
 	return math.Sqrt(dx*dx + dy*dy)
 }
 
@@ -512,7 +658,6 @@ func findClosestResource(pos [2]float64, resourceType string) (*Resource, int) {
 }
 
 func startSimulationLoop() {
-	log.Println("startSimulationLoop started")
 	ticker := time.NewTicker(time.Duration(config.SimulationSpeed) * time.Millisecond)
 	defer ticker.Stop()
 
@@ -539,19 +684,16 @@ func startSimulationLoop() {
 			case "start":
 				isRunning = true
 				simulationState.IsRunning = isRunning
-				log.Println("Simulation start requested, current isRunning: ", isRunning)
 				req.responseChan <- true
 
 			case "stop":
 				isRunning = false
 				simulationState.IsRunning = isRunning
-				log.Println("Simulation stop requested, current isRunning: ", isRunning)
 				req.responseChan <- true
 			case "restart":
 				initSimulation()
 				isRunning = true
 				simulationState.IsRunning = isRunning
-				log.Println("Simulation restart requested, current isRunning: ", isRunning)
 				req.responseChan <- true
 			}
 		}
@@ -605,7 +747,6 @@ func SetTimeStep(newTimeStep int) {
 	}
 	newTimeStepValue := <-responseChan
 	timeStep = newTimeStepValue
-	log.Printf("Time step set to %d \n", timeStep)
 }
 
 func GetTimeStep() int {
@@ -674,7 +815,6 @@ func LoadSimulationState() (*SaveState, error) {
 	config.ResourceCount = loadedConfig.ResourceCount
 	simulationState.IsRunning = false
 	isRunning = false
-	timeStep = timeStep
 
 	return &SaveState{
 		State:    loadedState,

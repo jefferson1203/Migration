@@ -1,6 +1,3 @@
-D'accord, je vais ajouter la procédure détaillée pour lancer l'application, en incluant les étapes pour démarrer le backend et le frontend, dans le fichier `README.md`.
-
-```markdown
 # Bird Migration Simulation
 
 Ce projet est une simulation multi-agent de la migration d'oiseaux, développée avec Go (backend) et React (frontend). Il permet de visualiser le déplacement d'oiseaux dans un environnement simulé, d'ajuster les paramètres de la simulation, et de sauvegarder l'état de celle-ci.
@@ -26,7 +23,7 @@ Ce projet est une simulation multi-agent de la migration d'oiseaux, développée
     *   Utilise `React` pour la construction des composants et la gestion de l'état.
     *   Utilise `axios` pour communiquer avec l'API REST du backend.
     *   Affiche le monde de la simulation avec un élément `canvas`.
-    *   Utilise `useEffect` pour faire les appels à l'api de manière efficace.
+    *   Utilise `useEffect` pour faire les appels à l'API de manière efficace.
 
 ## Installation et Lancement
 
@@ -36,7 +33,7 @@ Ce projet est une simulation multi-agent de la migration d'oiseaux, développée
 *   [Node.js](https://nodejs.org/en/download/) (version 16 ou supérieure) et npm (ou yarn)
 *   [Git](https://git-scm.com/downloads) (si vous souhaitez cloner le repo)
 *   Un éditeur de code (ex: VS Code, GoLand)
-*  Une installation de SQLite pour pouvoir utiliser la database en backend
+*   Une installation de SQLite pour pouvoir utiliser la base de données en backend
 
 ### Lancer l'application
 
@@ -44,7 +41,7 @@ Pour lancer l'application, suivez les étapes ci-dessous :
 
 1. **Clonez le repository :**
  ```bash
-   git clone https://github.com/ton_utilisateur/bird-migration-simulation.git
+ git clone https://github.com/ton_utilisateur/bird-migration-simulation.git
  ```
 
 2. **Démarrez le Backend :**
@@ -83,7 +80,7 @@ Pour lancer l'application, suivez les étapes ci-dessous :
     *   **Installez les dépendances :**
 
          ```bash
-         npm install axios react-konva @fontsource/baloo-2
+         npm install
          ```
     *   **Créez un fichier `.env` :**
         *   Créez un fichier `.env` à la racine du dossier `frontend/src` et ajoutez la ligne suivante :
@@ -96,16 +93,16 @@ Pour lancer l'application, suivez les étapes ci-dessous :
     npm start
     ```
 
-Le frontend devrait démarrer et être accessible dans ton navigateur à l'adresse `http://localhost:3000`.
+Le frontend devrait démarrer et être accessible dans votre navigateur à l'adresse `http://localhost:3000`.
 
 ### Utilisation
 
-*   **Démarrer la Simulation :** Clique sur le bouton "Start" pour lancer la simulation.
-*   **Arrêter la Simulation :** Clique sur le bouton "Stop" pour arrêter la simulation.
-*   **Modifier les paramètres :** Utilise le formulaire "Settings" pour modifier la vitesse de la simulation et la taille du monde.
-*   **Visualiser la Simulation :** Observe le mouvement des oiseaux dans la zone de simulation.
-*   **Charger une Sauvegarde:** Clique sur le bouton load pour récupérer la dernière sauvegarde depuis la base de données.
-* **Enregistrer la Sauvegarde** Clique sur le bouton save pour enregistrer l'état actuel de la simulation dans la base de donnée
+*   **Démarrer la Simulation :** Cliquez sur le bouton "Start" pour lancer la simulation.
+*   **Arrêter la Simulation :** Cliquez sur le bouton "Stop" pour arrêter la simulation.
+*   **Modifier les paramètres :** Utilisez le formulaire "Settings" pour modifier la vitesse de la simulation et la taille du monde.
+*   **Visualiser la Simulation :** Observez le mouvement des oiseaux dans la zone de simulation.
+*   **Charger une Sauvegarde :** Cliquez sur le bouton "Load" pour récupérer la dernière sauvegarde depuis la base de données.
+*   **Enregistrer la Sauvegarde :** Cliquez sur le bouton "Save" pour enregistrer l'état actuel de la simulation dans la base de données.
 
 ## Structure du Code
 
@@ -142,32 +139,18 @@ Les contributions sont les bienvenues ! Voici quelques idées d'amélioration :
 *   Améliorer la visualisation avec un environnement plus détaillé.
 *   Ajouter des interfaces pour l'ajout d'obstacles et de ressources par l'utilisateur.
 *   Ajouter des tests unitaires et d'intégration.
-*   Mettre en place une sauvegarde et chargement de l'état plus sophistiquée (gestion de différentes sauvegardes, etc)
+*   Mettre en place une sauvegarde et un chargement de l'état plus sophistiqués (gestion de différentes sauvegardes, etc).
 *   Améliorer l'UI pour une expérience utilisateur plus agréable.
 
-Pour contribuer, suis les étapes suivantes :
+Pour contribuer, suivez les étapes suivantes :
 
 1.  **Fork** le dépôt.
-2.  **Cloner** ton fork.
-3.  **Créer une branche** pour tes modifications.
-4.  **Appliquer tes modifications**
-5.  **Pousser** ta branche sur ton fork
-6.  **Ouvrir une Pull Request** vers le dépôt original.
+2.  **Clonez** votre fork.
+3.  **Créez une branche** pour vos modifications.
+4.  **Appliquez vos modifications**.
+5.  **Poussez** votre branche sur votre fork.
+6.  **Ouvrez une Pull Request** vers le dépôt original.
 
 ## Auteur
 
-[Ton Nom]
-
-
-```
-
-**Comment Utiliser Ce `README.md` :**
-
-1.  **Créer un Fichier :** Crée un nouveau fichier nommé `README.md` à la racine de ton projet.
-2.  **Copier le Contenu :** Copie et colle le contenu ci-dessus dans ton fichier `README.md`.
-3.  **Personnaliser :**
-    *   Remplace `[Ton Nom]` par ton nom.
-    *   Remplace `[Type de licence]` par le type de licence que tu souhaites utiliser pour ton projet (ex: `MIT`, `GPL`).
-    *   Ajoute ou modifie les sections qui ne te semblent pas appropriées.
-
-Ce `README.md` devrait donner un bon aperçu de ton projet et servir de point de départ pour toute personne souhaitant l'explorer.
+Jefferson MBOUOPDA
