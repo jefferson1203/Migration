@@ -123,6 +123,18 @@ Le backend en Go gère la logique de la simulation, en mettant à jour l'état d
 *   **Charger une Sauvegarde :** Cliquez sur le bouton "Load" pour récupérer la dernière sauvegarde depuis la base de données.
 *   **Enregistrer la Sauvegarde :** Cliquez sur le bouton "Save" pour enregistrer l'état actuel de la simulation dans la base de données.
 
+## Visualisation
+
+Voici quelques captures d'écran de l'application :
+
+### Tableau de Bord
+
+![Tableau de Bord](./dashboard.PNG)
+
+### Simulation
+
+![Simulation](./jeux.PNG)
+
 ## Structure du Code
 
 ```
