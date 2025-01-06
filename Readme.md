@@ -187,7 +187,7 @@ Pour contribuer, suivez les étapes suivantes :
 
 Jefferson MBOUOPDA 
 
-## Membre du groupe
+## Membres du groupe
 
 * Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend, la config, la BD et le main, la rédaction du readme, la note de clarification et uml-diagram.
 * Chloe TCHIENANG    : a fait la partie sur la boucle de simulation.
