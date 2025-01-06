@@ -190,8 +190,8 @@ Jefferson MBOUOPDA
 ## Membre du groupe
 
 * Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend, la config, la BD et le main, la rédaction du readme, la note de clarification et uml-diagram.
-* Chloe TCHIENANG    : a faitla boucle de simulation.
-* Estelle TOURASSE   : a contribué sur les fonction utilitaires.
+* Chloe TCHIENANG    : a fait la partie sur la boucle de simulation.
+* Estelle TOURASSE   : a contribué sur les fonctions utilitaires.
 * Ruben MOUGOUE      : a fais la partie sur le comportement des oiseaux.
 * Zoé POIRIER        : était malade lorsqu'on a décidé de faire ce deuxième projet.
 
