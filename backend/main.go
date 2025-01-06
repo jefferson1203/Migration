@@ -21,14 +21,17 @@ import (
 
 // --- Configuration ---
 var config struct {
-	Port            int
-	SimulationSpeed int
-	WorldSize       int
-	InitialBirds    int
-	EnvironmentSize int
-	DBPath          string
-	ObstacleCount   int
-	ResourceCount   int
+	Port             int
+	SimulationSpeed  int
+	WorldSize        int
+	InitialBirds     int
+	EnvironmentSize  int
+	DBPath           string
+	ObstacleCount    int
+	ResourceCount    int
+	Temperature      float64
+	FoodAvailability float64
+	PredatorPresence float64
 }
 
 var once sync.Once
@@ -76,6 +79,21 @@ func LoadConfig() {
 		}
 
 		config.DBPath = getEnv("DB_PATH", "simulation.db")
+
+		config.Temperature, envErr = strconv.ParseFloat(getEnv("TEMPERATURE", "20.0"), 64)
+		if envErr != nil {
+			config.Temperature = 20.0
+		}
+
+		config.FoodAvailability, envErr = strconv.ParseFloat(getEnv("FOOD_AVAILABILITY", "1.0"), 64)
+		if envErr != nil {
+			config.FoodAvailability = 1.0
+		}
+
+		config.PredatorPresence, envErr = strconv.ParseFloat(getEnv("PREDATOR_PRESENCE", "0.0"), 64)
+		if envErr != nil {
+			config.PredatorPresence = 0.0
+		}
 	})
 }
 
@@ -111,14 +129,31 @@ type Resource struct {
 	Current  int        `json:"current"`
 }
 
+type Predator struct {
+	ID       int        `json:"id"`
+	Position [2]float64 `json:"position"`
+	Velocity [2]float64 `json:"velocity"`
+}
+
+type Zone struct {
+	ID               int        `json:"id"`
+	Position         [2]float64 `json:"position"`
+	Temperature      float64    `json:"temperature"`
+	FoodAvailability float64    `json:"foodAvailability"`
+	PredatorPresence float64    `json:"predatorPresence"`
+}
+
 type SimulationState struct {
-	Birds          []Bird     `json:"birds"`
-	Time           int        `json:"time"`
-	IsRunning      bool       `json:"isRunning"`
-	WorldSize      int        `json:"worldSize"`
-	Obstacles      []Obstacle `json:"obstacles"`
-	Resources      []Resource `json:"resources"`
-	CollisionCount int        `json:"collisionCount"`
+	Birds            []Bird            `json:"birds"`
+	Time             int               `json:"time"`
+	IsRunning        bool              `json:"isRunning"`
+	WorldSize        int               `json:"worldSize"`
+	Obstacles        []Obstacle        `json:"obstacles"`
+	Resources        []Resource        `json:"resources"`
+	CollisionCount   int               `json:"collisionCount"`
+	Predators        []Predator        `json:"predators"`
+	TemperatureZones []TemperatureZone `json:"temperatureZones"`
+	Zones            []Zone            `json:"zones"`
 }
 
 type SimulationConfig struct {
@@ -133,6 +168,17 @@ type SaveState struct {
 	State    SimulationState  `json:"state"`
 	Config   SimulationConfig `json:"config"`
 	TimeStep int              `json:"timeStep"`
+}
+
+type EnvironmentalFactors struct {
+	Temperature      float64 `json:"temperature"`
+	FoodAvailability float64 `json:"foodAvailability"`
+	PredatorPresence float64 `json:"predatorPresence"`
+}
+
+type TemperatureZone struct {
+	Region      int     `json:"region"`
+	Temperature float64 `json:"temperature"`
 }
 
 // --- Simulation Engine ---
@@ -311,6 +357,49 @@ func main() {
 		c.JSON(http.StatusOK, savedState)
 	})
 
+	router.POST("/environment", func(c *gin.Context) {
+		var factors EnvironmentalFactors
+		if err := c.ShouldBindJSON(&factors); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		SetEnvironmentalFactors(factors)
+		c.JSON(http.StatusOK, gin.H{"message": "Environmental factors updated"})
+	})
+
+	router.GET("/environment", func(c *gin.Context) {
+		factors := GetEnvironmentalFactors()
+		c.JSON(http.StatusOK, factors)
+	})
+
+	router.GET("/temperature-zones", func(c *gin.Context) {
+		c.JSON(http.StatusOK, simulationState.TemperatureZones)
+	})
+
+	router.POST("/temperature-zones", func(c *gin.Context) {
+		var zones []TemperatureZone
+		if err := c.ShouldBindJSON(&zones); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		simulationState.TemperatureZones = zones
+		c.JSON(http.StatusOK, gin.H{"message": "Temperature zones updated"})
+	})
+
+	router.GET("/zones", func(c *gin.Context) {
+		c.JSON(http.StatusOK, simulationState.Zones)
+	})
+
+	router.POST("/zones", func(c *gin.Context) {
+		var zones []Zone
+		if err := c.ShouldBindJSON(&zones); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		simulationState.Zones = zones
+		c.JSON(http.StatusOK, gin.H{"message": "Zones updated"})
+	})
+
 	fmt.Printf("Server running on http://localhost:%d\n", config.Port)
 	if err := router.Run(fmt.Sprintf(":%d", config.Port)); err != nil {
 		log.Fatal(err)
@@ -393,10 +482,84 @@ func initSimulation() {
 			Group:    groups[i],
 		}
 	}
+
+	// Generate predators
+	numPredators := int(config.PredatorPresence * 10) // Number of predators based on predator presence
+	if numPredators < 1 {
+		numPredators = 1 // Ensure at least one predator
+	}
+	simulationState.Predators = make([]Predator, numPredators)
+	for i := range simulationState.Predators {
+		simulationState.Predators[i] = Predator{
+			ID:       i,
+			Position: [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)},
+			Velocity: [2]float64{rand.Float64() - 0.5, rand.Float64() - 0.5},
+		}
+	}
+
+	// Generate initial food location on one side
+	foodRegion = 0
+	currentFoodLocation = generateFoodLocation(foodRegion)
+	simulationState.Resources = []Resource{
+		{
+			ID:       0,
+			Position: currentFoodLocation,
+			Type:     "food",
+			Capacity: 5,
+			Current:  5,
+		},
+	}
+
+	// Generate zones
+	simulationState.Zones = []Zone{
+		{ID: 0, Position: [2]float64{float64(config.WorldSize) / 4, float64(config.WorldSize) / 4}, Temperature: 15.0, FoodAvailability: 1.0, PredatorPresence: 0.1},
+		{ID: 1, Position: [2]float64{3 * float64(config.WorldSize) / 4, float64(config.WorldSize) / 4}, Temperature: 25.0, FoodAvailability: 0.8, PredatorPresence: 0.2},
+		{ID: 2, Position: [2]float64{float64(config.WorldSize) / 4, 3 * float64(config.WorldSize) / 4}, Temperature: 10.0, FoodAvailability: 0.5, PredatorPresence: 0.3},
+		{ID: 3, Position: [2]float64{3 * float64(config.WorldSize) / 4, 3 * float64(config.WorldSize) / 4}, Temperature: 20.0, FoodAvailability: 0.9, PredatorPresence: 0.1},
+	}
+
+	// Generate initial food location in the best zone
+	bestZone := findBestZone()
+	currentFoodLocation = generateFoodLocation(bestZone.ID)
+	simulationState.Resources = []Resource{
+		{
+			ID:       0,
+			Position: currentFoodLocation,
+			Type:     "food",
+			Capacity: 5,
+			Current:  5,
+		},
+	}
+
 	simulationState.Time = 0
 	simulationState.IsRunning = isRunning
 	simulationState.WorldSize = config.WorldSize
 	isRunning = true
+}
+
+func generateFoodLocation(region int) [2]float64 {
+	var xOffset, yOffset float64
+	switch region {
+	case 0:
+		xOffset, yOffset = 0, 0
+	case 1:
+		xOffset, yOffset = float64(config.WorldSize)/2, 0
+	case 2:
+		xOffset, yOffset = 0, float64(config.WorldSize)/2
+	case 3:
+		xOffset, yOffset = float64(config.WorldSize)/2, float64(config.WorldSize)/2
+	}
+	return [2]float64{xOffset + rand.Float64()*float64(config.WorldSize)/2, yOffset + rand.Float64()*float64(config.WorldSize)/2}
+}
+
+func findBestZone() Zone {
+	bestZone := simulationState.Zones[0]
+	for _, zone := range simulationState.Zones {
+		if zone.Temperature > 10.0 && zone.Temperature < 25.0 && zone.FoodAvailability > bestZone.FoodAvailability {
+			bestZone = zone
+		}
+	}
+	return bestZone
 }
 
 func StartSimulation() {
@@ -421,6 +584,19 @@ func StopSimulation() {
 func updateSimulation() {
 	if !isRunning {
 		return
+	}
+
+	// Adjust bird behavior based on environmental factors
+	for i := range simulationState.Birds {
+		bird := &simulationState.Birds[i]
+		zone := findClosestZone(bird.Position)
+		if zone.Temperature < 10.0 {
+			bird.State = "migrating"
+		} else if zone.FoodAvailability < 0.5 {
+			bird.State = "searchingFood"
+		} else if zone.PredatorPresence > 0.5 {
+			bird.State = "resting"
+		}
 	}
 
 	groups := make(map[int][]Bird)
@@ -458,20 +634,9 @@ func updateSimulation() {
 
 	// Check if the current food location is depleted
 	if len(simulationState.Resources) == 0 || simulationState.Resources[0].Current <= 0 {
-		// Generate new food location in a different region
-		foodRegion = (foodRegion + 1) % 4
-		var xOffset, yOffset float64
-		switch foodRegion {
-		case 0:
-			xOffset, yOffset = 0, 0
-		case 1:
-			xOffset, yOffset = float64(config.WorldSize)/2, 0
-		case 2:
-			xOffset, yOffset = 0, float64(config.WorldSize)/2
-		case 3:
-			xOffset, yOffset = float64(config.WorldSize)/2, float64(config.WorldSize)/2
-		}
-		currentFoodLocation = [2]float64{xOffset + rand.Float64()*float64(config.WorldSize)/2, yOffset + rand.Float64()*float64(config.WorldSize)/2}
+		// Generate new food location in the next best zone
+		bestZone := findBestZone()
+		currentFoodLocation = generateFoodLocation(bestZone.ID)
 		simulationState.Resources = []Resource{
 			{
 				ID:       0,
@@ -516,6 +681,28 @@ func updateSimulation() {
 		} else if bird.State == "resting" && rand.Float64() < 0.1 {
 			bird.State = "migrating"
 			bird.Target = [2]float64{rand.Float64() * float64(config.WorldSize), rand.Float64() * float64(config.WorldSize)}
+		}
+	}
+
+	// Update predator positions and check for attacks
+	for i := range simulationState.Predators {
+		predator := &simulationState.Predators[i]
+		predator.Position[0] += predator.Velocity[0] * float64(timeStep)
+		predator.Position[1] += predator.Velocity[1] * float64(timeStep)
+
+		// Ensure predator stays within world boundaries
+		predator.Position[0] = math.Max(0, math.Min(float64(config.WorldSize), predator.Position[0]))
+		predator.Position[1] = math.Max(0, math.Min(float64(config.WorldSize), predator.Position[1]))
+
+		// Check for attacks on birds
+		for j := range simulationState.Birds {
+			bird := &simulationState.Birds[j]
+			if distance(predator.Position, bird.Position) < 10 {
+				// Bird tries to escape by moving towards the nearest group
+				closestGroupPos := findClosestGroup(bird)
+				bird.Target = closestGroupPos
+				bird.State = "migrating"
+			}
 		}
 	}
 
@@ -657,6 +844,45 @@ func findClosestResource(pos [2]float64, resourceType string) (*Resource, int) {
 	return nil, -1
 }
 
+func findClosestGroup(bird *Bird) [2]float64 {
+	groups := make(map[int][]Bird)
+	for _, b := range simulationState.Birds {
+		groups[b.Group] = append(groups[b.Group], b)
+	}
+
+	var closestGroupPos [2]float64
+	minDist := math.MaxFloat64
+	for _, group := range groups {
+		if len(group) > 1 {
+			var totalX, totalY float64
+			for _, b := range group {
+				totalX += b.Position[0]
+				totalY += b.Position[1]
+			}
+			groupPos := [2]float64{totalX / float64(len(group)), totalY / float64(len(group))}
+			dist := distance(bird.Position, groupPos)
+			if dist < minDist {
+				minDist = dist
+				closestGroupPos = groupPos
+			}
+		}
+	}
+	return closestGroupPos
+}
+
+func findClosestZone(pos [2]float64) Zone {
+	var closest Zone
+	minDist := math.MaxFloat64
+	for _, zone := range simulationState.Zones {
+		dist := distance(pos, zone.Position)
+		if dist < minDist {
+			minDist = dist
+			closest = zone
+		}
+	}
+	return closest
+}
+
 func startSimulationLoop() {
 	ticker := time.NewTicker(time.Duration(config.SimulationSpeed) * time.Millisecond)
 	defer ticker.Stop()
@@ -727,7 +953,6 @@ func SetSimulationConfig(newConfig SimulationConfig) {
 }
 
 func setSimulationConfigHelper(newConfig SimulationConfig) {
-
 	config.SimulationSpeed = newConfig.SimulationSpeed
 	config.WorldSize = newConfig.WorldSize
 	config.InitialBirds = newConfig.InitialBirds
@@ -758,7 +983,6 @@ func GetTimeStep() int {
 }
 
 func SaveSimulationState() error {
-
 	stateJSON, err := json.Marshal(simulationState)
 	if err != nil {
 		return fmt.Errorf("error marshaling simulation state: %w", err)
@@ -821,5 +1045,21 @@ func LoadSimulationState() (*SaveState, error) {
 		Config:   loadedConfig,
 		TimeStep: timeStep,
 	}, nil
+}
 
+func SetEnvironmentalFactors(factors EnvironmentalFactors) {
+	config.Temperature = factors.Temperature
+	config.FoodAvailability = factors.FoodAvailability
+	config.PredatorPresence = factors.PredatorPresence
+
+	// Reinitialize simulation to update the number of predators
+	initSimulation()
+}
+
+func GetEnvironmentalFactors() EnvironmentalFactors {
+	return EnvironmentalFactors{
+		Temperature:      config.Temperature,
+		FoodAvailability: config.FoodAvailability,
+		PredatorPresence: config.PredatorPresence,
+	}
 }

@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import birdImage from '../assets/bird.png'; // Add bird image
 import mountainImage from '../assets/mountain.png'; // Add mountain image
 import foodImage from '../assets/food.png'; // Add food image
+import eagleImage from '../assets/eagle.png'; // Add eagle image
 
 const SimulationCanvas = ({ simulationState }) => {
     const canvasRef = useRef(null);
@@ -19,6 +20,7 @@ const SimulationCanvas = ({ simulationState }) => {
         const birdSize = 5;
         const obstacleSize = 5; // Increase obstacle size
         const resourceSize = 5;
+        const predatorSize = 10;
 
         const birdImg = new Image();
         birdImg.src = birdImage;
@@ -28,6 +30,9 @@ const SimulationCanvas = ({ simulationState }) => {
 
         const foodImg = new Image();
         foodImg.src = foodImage;
+
+        const eagleImg = new Image();
+        eagleImg.src = eagleImage;
 
         // Clear canvas before redrawing
         ctx.clearRect(0, 0, width, height);
@@ -72,6 +77,29 @@ const SimulationCanvas = ({ simulationState }) => {
             ctx.lineWidth = 2;
             ctx.stroke();
             ctx.closePath();
+        });
+
+        // Draw predators as eagles with black borders
+        simulationState.predators?.forEach((predator) => {
+            ctx.drawImage(eagleImg, predator.position[0] * scaleX, predator.position[1] * scaleY, predatorSize * 4, predatorSize * 4);
+            ctx.beginPath();
+            ctx.arc(predator.position[0] * scaleX + predatorSize * 2, predator.position[1] * scaleY + predatorSize * 2, predatorSize * 2, 0, 2 * Math.PI);
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+        });
+
+        // Draw temperature zones
+        simulationState.temperatureZones?.forEach((zone) => {
+            ctx.beginPath();
+            ctx.arc(zone.position[0] * scaleX, zone.position[1] * scaleY, 20, 0, 2 * Math.PI);
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+            ctx.fillStyle = "red";
+            ctx.fillText(`${zone.temperature}°C`, zone.position[0] * scaleX - 10, zone.position[1] * scaleY - 10);
         });
     }, [simulationState]);
 

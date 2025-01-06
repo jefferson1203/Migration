@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SimulationCanvas from './components/SimulationCanvas';
 import Controls from './components/Controls';
 import Settings from './components/Settings';
+import Dashboard from './components/Dashboard';
 import { fetchSimulationState, startSimulation, stopSimulation } from './utils/api';
 import './styles/styles.css';
 
@@ -67,9 +68,16 @@ function App() {
     }
   }, []);
 
+  const handleUpdateFactors = (factors) => {
+    // Fetch the updated simulation state from the backend
+    // and update the simulationState accordingly
+    // ...existing code...
+  };
+
   return (
     <div className="app-container">
       <h1>Bird Migration Simulation</h1>
+      <Dashboard onUpdate={handleUpdateFactors} />
       <div className="simulation-container">
         {/* Simulation canvas */}
         <SimulationCanvas simulationState={simulationState} />
@@ -94,6 +102,7 @@ function App() {
             <p><span style={{ color: 'orange' }}>●</span> Food Resource</p>
             <p><span style={{ color: 'lightblue' }}>●</span> Rest Resource</p>
             <p><span style={{ color: 'gray' }}>●</span> Obstacle</p>
+            <p><span style={{ color: 'black' }}>●</span> Eagle (Predator)</p>
           </div>
         </div>
       </div>
