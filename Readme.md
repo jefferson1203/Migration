@@ -189,7 +189,7 @@ Jefferson MBOUOPDA
 
 ## Membre du groupe
 
-* Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend.
+* Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend, la config, la BD et le main.
 * Chloe TCHIENANG    : a faitla boucle de simulation.
 * Estelle TOURASSE   : a contribué sur les fonction utilitaires.
 * Ruben MOUGOUE      : a fais la partie sur le comportement des oiseaux.
@@ -198,4 +198,4 @@ Jefferson MBOUOPDA
 On a tous conttribué sur la l'UML et la Note de clarification
 
 **MERCI**
-#Projet de AI30 A24
+# Projet de AI30 A24
