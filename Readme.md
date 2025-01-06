@@ -185,4 +185,17 @@ Pour contribuer, suivez les étapes suivantes :
 
 ## Auteur
 
-Jefferson MBOUOPDA
+Jefferson MBOUOPDA 
+
+## Membre du groupe
+
+Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend
+Chloe TCHIENANG    : a faitla boucle de simulation
+Estelle TOURASSE   : a contribué sur les fonction utilitaires
+Ruben MOUGOUE      : a fais la partie sur le comportement des oiseaux
+Zoé POIRIER        : était malade lorsqu'on a décidé de faire ce deuxième projet
+
+On a tous conttribué sur la l'UML et la Note de clarification
+
+**MERCI**
+#Projet de AI30 A24
