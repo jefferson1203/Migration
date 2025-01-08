@@ -26,6 +26,30 @@ Ce projet est une simulation multi-agent de la migration d'oiseaux, développée
     *   Affiche le monde de la simulation avec un élément `canvas`.
     *   Utilise `useEffect` pour faire les appels à l'API de manière efficace.
 
+## Principe de la Simulation
+
+La simulation repose sur un modèle multi-agent où chaque oiseau est représenté comme un agent autonome avec des comportements spécifiques. Les agents interagissent avec leur environnement et entre eux selon des règles prédéfinies.
+
+### Communication entre les Agents
+
+Les agents communiquent indirectement en observant leur environnement immédiat. Chaque agent peut percevoir la position des autres agents, les obstacles, et les ressources disponibles dans son voisinage. Cette perception influence leurs décisions et actions, telles que :
+
+* **Migration :** Les agents se déplacent vers une destination cible en évitant les obstacles et en suivant des trajectoires optimales.
+* **Repos :** Les agents peuvent décider de se reposer après une certaine distance parcourue ou en fonction de leur niveau d'énergie.
+* **Recherche de Nourriture :** Les agents cherchent des ressources alimentaires lorsqu'ils ont faim et ajustent leur trajectoire en conséquence.
+* **Évitement des Obstacles :** Les agents détectent et contournent les obstacles pour éviter les collisions.
+* **Interaction Sociale :** Les agents peuvent ajuster leur comportement en fonction de la proximité d'autres agents, par exemple en formant des groupes pour migrer ensemble.
+
+### Modèle de Simulation
+
+La simulation est divisée en cycles de temps discrets. À chaque cycle, les agents :
+
+1. **Perçoivent leur environnement :** Chaque agent collecte des informations sur son voisinage immédiat.
+2. **Décident de leurs actions :** En fonction des informations perçues, chaque agent décide de son action suivante (se déplacer, se reposer, chercher de la nourriture, etc.).
+3. **Agissent :** Les agents exécutent leurs actions, ce qui peut modifier leur position, leur état interne, et l'état de l'environnement.
+
+Le backend en Go gère la logique de la simulation, en mettant à jour l'état des agents et de l'environnement à chaque cycle. Le frontend en React affiche l'état actuel de la simulation en temps réel, permettant aux utilisateurs de visualiser les mouvements des oiseaux et d'interagir avec la simulation.
+
 ## Installation et Lancement
 
 ### Prérequis
@@ -98,6 +122,18 @@ Ce projet est une simulation multi-agent de la migration d'oiseaux, développée
 *   **Visualiser la Simulation :** Observez le mouvement des oiseaux dans la zone de simulation.
 *   **Charger une Sauvegarde :** Cliquez sur le bouton "Load" pour récupérer la dernière sauvegarde depuis la base de données.
 *   **Enregistrer la Sauvegarde :** Cliquez sur le bouton "Save" pour enregistrer l'état actuel de la simulation dans la base de données.
+
+## Visualisation
+
+Voici quelques captures d'écran de l'application :
+
+### Tableau de Bord
+
+![Tableau de Bord](./dashboard.PNG)
+
+### Simulation
+
+![Simulation](./jeux.PNG)
 
 ## Structure du Code
 
