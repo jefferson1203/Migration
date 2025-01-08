@@ -1,4 +1,4 @@
-# Bird Migration Simulation
+﻿# Bird Migration Simulation
 
 Ce projet est une simulation multi-agent de la migration d'oiseaux, développée avec Go (backend) et React (frontend). Il permet de visualiser le déplacement d'oiseaux dans un environnement simulé, d'ajuster les paramètres de la simulation, et de sauvegarder l'état de celle-ci.
 
@@ -149,4 +149,17 @@ Pour contribuer, suivez les étapes suivantes :
 
 ## Auteur
 
-Jefferson MBOUOPDA
+Jefferson MBOUOPDA 
+
+## Membres du groupe
+
+* Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend, la config, la BD et le main, la rédaction du readme, la note de clarification.
+* Chloe TCHIENANG    : a fait la partie sur la boucle de simulation.
+* Estelle TOURASSE   : a contribué sur les fonctions utilitaires.
+* Ruben MOUGOUE      : a fait la partie sur le comportement des oiseaux et intéraction des agents, la présentation powerpoint et le diagramme de classe .
+* Zoé POIRIER        : a travaillé avec Estelle sur les fonctions utilitaires.
+
+On a tous conttribué sur la l'UML et la Note de clarification
+
+**MERCI**
+# Projet de AI30 A24
