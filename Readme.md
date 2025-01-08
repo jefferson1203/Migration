@@ -1,4 +1,4 @@
-# Bird Migration Simulation
+﻿# Bird Migration Simulation
 
 Ce projet est une simulation multi-agent de la migration d'oiseaux, développée avec Go (backend) et React (frontend). Il permet de visualiser le déplacement d'oiseaux dans un environnement simulé, d'ajuster les paramètres de la simulation, et de sauvegarder l'état de celle-ci.
 
