@@ -187,13 +187,13 @@ Pour contribuer, suivez les étapes suivantes :
 
 Jefferson MBOUOPDA 
 
-## Membre du groupe
+## Membres du groupe
 
-* Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend, la config, la BD et le main, la rédaction du readme, la note de clarification et uml-diagram.
+* Jefferson MBOUOPDA : a fait toute la partie frontEnd, l'APi backend, la config, la BD et le main, la rédaction du readme, la note de clarification.
 * Chloe TCHIENANG    : a fait la partie sur la boucle de simulation.
 * Estelle TOURASSE   : a contribué sur les fonctions utilitaires.
-* Ruben MOUGOUE      : a fais la partie sur le comportement des oiseaux.
-* Zoé POIRIER        : était malade lorsqu'on a décidé de faire ce deuxième projet.
+* Ruben MOUGOUE      : a fait la partie sur le comportement des oiseaux et intéraction des agents, la présentation powerpoint et le diagramme de classe .
+* Zoé POIRIER        : a travaillé avec Estelle sur les fonctions utilitaires.
 
 On a tous conttribué sur la l'UML et la Note de clarification
 

@@ -1,0 +1,76 @@
+@startuml
+
+class Simulation {
+  - worldSize
+  - birds
+  - obstacles
+  - resources
+  - collisionCount
+  + start()
+  + stop()
+  + update()
+  + saveState()
+  + loadState()
+}
+
+class Bird {
+  - id
+  - position
+  - state
+  - energy
+  + move()
+  + rest()
+  + searchFood()
+  + avoidObstacle()
+}
+
+class Obstacle {
+  - id
+  - position
+  - size
+}
+
+class Resource {
+  - id
+  - position
+  - type
+}
+
+class App {
+  - simulationState
+  + render()
+}
+
+class SimulationCanvas {
+  - simulationState
+  + render()
+}
+
+class Controls {
+  - isRunning
+  - onStart
+  - onStop
+  + render()
+}
+
+class Settings {
+  - onUpdate
+  + render()
+}
+
+class Dashboard {
+  - onUpdate
+  + render()
+}
+
+
+Simulation "1" *-- "many" Bird
+Simulation "1" *-- "many" Obstacle
+Simulation "1" *-- "many" Resource
+App "1" o-- "1" Simulation
+SimulationCanvas "1" o-- "1" Simulation
+Controls "1" o-- "1" Simulation
+Settings "1" o-- "1" Simulation
+Dashboard "1" o-- "1" Simulation
+
+@enduml
